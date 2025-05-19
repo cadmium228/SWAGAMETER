@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Сканер Сваги</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #030b2a;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+    .counter-label {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      padding-top: 100px;
+    }
+    .scan-button {
+      padding: 16px 24px;
+      font-size: 20px;
+      border: none;
+      border-radius: 20px;
+      background-color: #ff007f;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 0 20px #ff007f;
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+    .scan-button:hover {
+      transform: scale(1.05);
+      background-color: #ff3399;
+    }
+    .gauge {
+      margin-top: 40px;
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+    .gauge svg {
+      transform: rotate(-90deg);
+      overflow: visible;
+    }
+    .gauge-circle-bg {
+      fill: none;
+      stroke: #444;
+      stroke-width: 12;
+    }
+    .gauge-circle {
+      fill: none;
+      stroke: #00ffae;
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 565.48;
+      stroke-dashoffset: 565.48;
+      transition: stroke-dashoffset 2s ease-out;
+    }
+    @keyframes blink-red-stroke {
+      0%, 100% { stroke: #ff0000; }
+      50%      { stroke: #444444; }
+    }
+    .blink-stroke {
+      animation: blink-red-stroke 1s infinite;
+    }
+    .gauge-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 32px;
+      font-family: monospace;
+      opacity: 0;
+      transition: opacity 1s ease-in;
+    }
+    .comment {
+      margin-top: 20px;
+      font-size: 20px;
+      /* font-style убрали */
+      opacity: 0;
+      transition: opacity 1s ease-in;
+    }
+    .instruction {
+      margin-top: 30px;
+      font-size: 18px;
+      text-align: center;
+      max-width: 300px;
+      line-height: 1.4;
+      opacity: 0.8;
+    }
+    /* Оверлей для фулскрин мигания */
+    .alert-overlay {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255,0,0,0.5);
+      pointer-events: none;
+      opacity: 0;
+      animation: blink-red-screen 1s infinite;
+    }
+    @keyframes blink-red-screen {
+      0%, 100% { opacity: 0; }
+      50%      { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="counter-label">
+    Сваги 💣: <span id="swagPercent"></span>
+  </div>
+
+  <div class="container">
+    <button class="scan-button" onclick="startScan()">
+      💣🤟 СКАНИРОВАТЬ СВАГУ 🤟💣
+    </button>
+
+    <div class="gauge" id="gauge" style="display: none;">
+      <svg width="220" height="220">
+        <circle class="gauge-circle-bg" cx="110" cy="110" r="90" />
+        <circle class="gauge-circle" cx="110" cy="110" r="90" />
+      </svg>
+      <div class="gauge-text" id="gaugeValue">0%</div>
+    </div>
+
+    <div class="comment" id="comment"></div>
+
+    <div class="instruction">
+      🤟 Направьте смартфон на вещь, у которой хотите отсканировать свагу. 🤟
+    </div>
+  </div>
+
+  <script>
+    const gaugePath = document.querySelector('.gauge-circle');
+    const gaugeText = document.getElementById('gaugeValue');
+    const swagPercentLabel = document.getElementById('swagPercent');
+    const commentDiv = document.getElementById('comment');
+    let animating = false;
+
+    function getComment(pct) {
+      if (pct <= 19)   return "Плохой уровень сваги ☹️";
+      if (pct <= 39)   return "Нормальный уровень сваги 😃";
+      if (pct <= 59)   return "Отличный уровень сваги 😀";
+      if (pct <= 79)   return "Невероятный уровень сваги 😁";
+      return            "☣️ СВАГА ЗАШКАЛИВАЕТ ☣️";
+    }
+
+    function startScan() {
+      if (animating) return;
+      animating = true;
+
+      // Убираем возможный предыдущий оверлей
+      const oldOverlay = document.querySelector('.alert-overlay');
+      if (oldOverlay) oldOverlay.remove();
+
+      const gauge = document.getElementById('gauge');
+      gauge.style.display = 'block';
+      gaugePath.style.transition = 'none';
+      gaugePath.style.strokeDashoffset = '565.48';
+      gaugePath.classList.remove('blink-stroke');
+      gaugeText.style.opacity = '0';
+      commentDiv.style.opacity = '0';
+      gaugeText.textContent = '0%';
+      swagPercentLabel.textContent = '';
+
+      setTimeout(() => {
+        const target = Math.floor(Math.random() * 101);
+        const offset = 565.48 - (565.48 * target / 100);
+        gaugePath.style.transition = 'stroke-dashoffset 2s ease-out';
+        gaugePath.style.strokeDashoffset = offset;
+
+        setTimeout(() => {
+          gaugeText.textContent = target + '%';
+          swagPercentLabel.textContent = target + '%';
+          gaugeText.style.opacity = '1';
+
+          const comment = getComment(target);
+          commentDiv.textContent = comment;
+          commentDiv.style.opacity = '1';
+
+          if (target >= 80) {
+            // мигание круга
+            gaugePath.classList.add('blink-stroke');
+            // мигание экрана
+            const overlay = document.createElement('div');
+            overlay.className = 'alert-overlay';
+            document.body.appendChild(overlay);
+          }
+
+          animating = false;
+        }, 2000);
+      }, 50);
+    }
+  </script>
+
+</body>
+</html>
